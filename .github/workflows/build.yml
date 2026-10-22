@@ -1,0 +1,44 @@
+name: Build APK
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install Android NDK and CMake
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.13113456" "cmake;3.31.6" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Fetch llama.cpp (pinned version)
+        run: |
+          mkdir -p app/src/main/cpp/llama.cpp
+          cd app/src/main/cpp/llama.cpp
+          git init -q
+          git remote add origin https://github.com/ggml-org/llama.cpp.git
+          git fetch --depth 1 origin 5f5acfe2504b490386cd03020202f59e36861add
+          git checkout -q FETCH_HEAD
+          rm -rf .git
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+
+      - name: Build debug APK
+        run: gradle assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NVEL-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
