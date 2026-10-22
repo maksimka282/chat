@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>NVEL</title>
+<style>
+  :root {
+    --bg:#06080b; --panel:#0d1218; --panel2:#111821; --line:#1b2633; --text:#dce6f0; --dim:#6f8196;
+    --blue:#38bdf8; --green:#3ddc97; --red:#ff5a43; --amber:#f5b942;
+  }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { margin:0; }
+  body {
+    background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,sans-serif; font-size:15px;
+    padding:14px 14px 96px;
+    background-image:linear-gradient(rgba(56,189,248,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.035) 1px,transparent 1px);
+    background-size:24px 24px;
+  }
+  .mono { font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; }
+  .screen { animation:fade .25s ease; }
+  @keyframes fade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.25; } }
+  @keyframes sweep { from { transform:rotate(0deg); } to { transform:rotate(var(--a)); } }
+
+  .top { display:flex; justify-content:space-between; align-items:center; padding:2px 2px 14px; }
+  .brand { font-weight:800; letter-spacing:.35em; font-size:15px; display:flex; align-items:center; gap:10px; }
+  .brand small { font-weight:500; letter-spacing:.18em; color:var(--dim); font-size:10px; font-family:ui-monospace,Menlo,monospace; border-left:1px solid var(--line); padding-left:10px; }
+  .beat { width:9px; height:9px; border-radius:50%; background:var(--green); box-shadow:0 0 10px var(--green); animation:pulse 2.2s infinite; }
+  .date { color:var(--dim); font-size:12px; }
+
+  .panel { background:linear-gradient(180deg,var(--panel2),var(--panel)); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px; position:relative; }
+  .panel::before { content:''; position:absolute; left:-1px; top:-1px; width:14px; height:14px; border-left:2px solid var(--blue); border-top:2px solid var(--blue); border-top-left-radius:12px; opacity:.7; }
+  .lbl { font-family:ui-monospace,Menlo,monospace; font-size:10px; letter-spacing:.2em; color:var(--dim); margin-bottom:8px; }
+  .center { text-align:center; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .between { justify-content:space-between; }
+
+  .summary { display:flex; padding:10px 6px; }
+  .sum { flex:1; text-align:center; border-right:1px solid var(--line); }
+  .sum:last-child { border-right:none; }
+  .sum b { display:block; font:700 22px ui-monospace,Menlo,monospace; }
+  .sum span { font:10px ui-monospace,Menlo,monospace; letter-spacing:.18em; color:var(--dim); }
+
+  .reactor { cursor:pointer; }
+  .rtop { display:flex; justify-content:space-between; align-items:baseline; }
+  .rname { font-weight:700; font-size:17px; }
+  .iter { color:var(--dim); font-size:12px; letter-spacing:.1em; }
+  .rbody { display:flex; align-items:center; gap:6px; margin:4px 0 2px; }
+  .mini { width:52%; max-width:190px; }
+  .rside { flex:1; display:flex; flex-direction:column; gap:8px; align-items:flex-start; }
+  .rtxt { color:var(--dim); font-size:13px; margin:2px 0 10px; }
+  .rfoot { margin-top:8px; font-size:10px; letter-spacing:.14em; color:var(--dim); }
+
+  .st { font-size:12px; letter-spacing:.16em; font-weight:700; color:var(--dim); }
+  .st.big { font-size:16px; margin:2px 0 12px; }
+  .st.blue { color:var(--blue); } .st.green { color:var(--green); } .st.red { color:var(--red); }
+
+  .gauge { width:100%; display:block; }
+  .g-blue { stroke:var(--blue); } .g-green { stroke:var(--green); } .g-red { stroke:var(--red); }
+  .g-arc { fill:none; stroke-width:12; opacity:.85; }
+  .g-tick { stroke:#2b3a4c; stroke-width:2; }
+  .g-txt { fill:var(--dim); font:700 8px ui-monospace,Menlo,monospace; letter-spacing:.12em; }
+  .needle { transform-origin:120px 120px; transform:rotate(var(--a)); animation:sweep .9s cubic-bezier(.2,.9,.3,1.2); }
+  .needle line { stroke:var(--text); stroke-width:3; stroke-linecap:round; }
+  .needle circle { fill:var(--panel); stroke:var(--text); stroke-width:3; }
+
+  .leds { display:flex; gap:10px; }
+  .led { width:18px; height:18px; border-radius:50%; background:#16202b; border:1px solid #223042; }
+  .led.blue { background:var(--blue); box-shadow:0 0 12px var(--blue); border-color:var(--blue); }
+  .led.green { background:var(--green); box-shadow:0 0 12px var(--green); border-color:var(--green); }
+  .led.red { background:var(--red); box-shadow:0 0 12px var(--red); border-color:var(--red); }
+
+  .lamps { display:flex; gap:12px; }
+  .lamps.wrap { flex-wrap:wrap; justify-content:center; margin-top:14px; }
+  .lamp { display:inline-flex; align-items:center; gap:6px; font:700 10px ui-monospace,Menlo,monospace; letter-spacing:.1em; color:#46566a; }
+  .lamp i { width:9px; height:9px; border-radius:50%; background:#18222d; }
+  .lamp.on { color:var(--c); } .lamp.on i { background:var(--c); box-shadow:0 0 9px var(--c); }
+  .l-blue { --c:var(--blue); } .l-red { --c:var(--red); } .l-amber { --c:var(--amber); } .l-green { --c:var(--green); }
+
+  .strip { display:grid; grid-template-columns:repeat(30,1fr); gap:2px; }
+  .cell { height:20px; border-radius:2px; background:#121a24; }
+  .c-blue { background:var(--blue); } .c-green { background:var(--green); } .c-red { background:var(--red); }
+  .c-miss { background:transparent; border:1px solid rgba(255,90,67,.55); }
+  .c-none { opacity:.35; }
+
+  .hero { margin:6px 2px 12px; }
+  .hname { font-size:26px; font-weight:800; }
+  .hsub { font-size:11px; letter-spacing:.14em; color:var(--dim); margin-top:2px; }
+  .mtext { font-size:17px; font-weight:600; line-height:1.35; }
+  .micro { margin:10px 0 0; padding-left:18px; color:var(--dim); font-size:14px; line-height:1.5; }
+
+  .btn { background:#16202b; color:var(--text); border:1px solid var(--line); border-radius:9px; padding:10px 14px; font:600 12px ui-monospace,Menlo,monospace; letter-spacing:.1em; }
+  .btn.small { padding:7px 11px; font-size:11px; }
+  .btn.primary { background:var(--blue); color:#021018; border:none; font-weight:800; width:100%; padding:15px; font-size:13px; letter-spacing:.18em; }
+  .btn.tog { flex:1; min-width:30%; padding:14px 6px; }
+  .btn.sel-ok { background:var(--green); color:#04190e; border-color:var(--green); }
+  .btn.sel-up { background:var(--blue); color:#021018; border-color:var(--blue); }
+  .btn.sel-down { background:var(--red); color:#220803; border-color:var(--red); }
+  .btn.sel-no { background:#3a4656; border-color:#3a4656; }
+  .btn.exec { margin-top:14px; }
+  .dock { position:fixed; left:0; right:0; bottom:0; padding:12px 14px 16px; background:linear-gradient(180deg,transparent,var(--bg) 40%); }
+
+  input, textarea, select { width:100%; background:#080b0f; color:var(--text); border:1px solid var(--line); border-radius:9px; padding:11px; font-size:15px; font-family:inherit; margin:2px 0 12px; }
+
+  .adv { border-radius:10px; padding:12px 14px; margin-bottom:12px; font-size:14px; line-height:1.45; border:1px solid; }
+  .adv.up { background:rgba(56,189,248,.08); border-color:var(--blue); }
+  .adv.down { background:rgba(255,90,67,.09); border-color:var(--red); }
+  .adv.warn { background:rgba(245,185,66,.08); border-color:var(--amber); }
+
+  .logl { font:12px/1.7 ui-monospace,Menlo,monospace; color:var(--dim); }
+  .empty { text-align:center; color:var(--dim); margin:50px 10px; line-height:1.6; font-size:14px; }
+  .aiout { margin:8px 0 0; padding:0; white-space:pre-wrap; word-break:break-word; font:12px/1.5 ui-monospace,Menlo,monospace; color:var(--dim); max-height:170px; overflow:auto; }
+
+  /* ---------- ЧАТ ---------- */
+  #chatRoot { position:fixed; inset:0; z-index:50; display:none; flex-direction:column; background:var(--bg);
+    background-image:linear-gradient(rgba(56,189,248,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.035) 1px,transparent 1px); background-size:24px 24px; }
+  #chatRoot.on { display:flex; }
+  #c-main { flex:1; min-height:0; display:flex; flex-direction:column; }
+  .c-head { display:flex; align-items:center; gap:6px; padding:10px 10px; border-bottom:1px solid var(--line); background:var(--panel); flex:none; }
+  .c-head .btn.small { padding:9px 11px; flex:none; }
+  .c-head .c-ic { min-width:38px; text-align:center; font-size:14px; }
+  .c-title { flex:1; min-width:0; font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 4px; }
+  .c-title small { display:block; font:10px ui-monospace,Menlo,monospace; letter-spacing:.16em; color:var(--dim); font-weight:500; }
+  .c-msgs { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 12px 8px; display:flex; flex-direction:column; }
+  .c-msgs > .empty { margin:auto; }
+  .c-msg { display:flex; flex-direction:column; margin-bottom:14px; max-width:92%; }
+  .c-msg.user { align-self:flex-end; align-items:flex-end; }
+  .c-msg.ai { align-self:flex-start; }
+  .c-who { font:10px ui-monospace,Menlo,monospace; letter-spacing:.16em; color:var(--dim); margin:0 4px 4px; }
+  .c-body { padding:10px 13px; border-radius:14px; line-height:1.5; font-size:15px; white-space:pre-wrap; word-break:break-word; border:1px solid var(--line); }
+  .c-msg.user .c-body { background:rgba(56,189,248,.12); border-color:rgba(56,189,248,.45); border-bottom-right-radius:4px; }
+  .c-msg.ai .c-body { background:linear-gradient(180deg,var(--panel2),var(--panel)); border-bottom-left-radius:4px; }
+  .c-body b { color:#fff; }
+  .c-body code { font:13px ui-monospace,Menlo,monospace; background:#080b0f; border:1px solid var(--line); border-radius:5px; padding:1px 5px; }
+  .c-body pre.c-code { margin:8px 0; padding:10px; background:#080b0f; border:1px solid var(--line); border-radius:9px; overflow-x:auto; font:12.5px/1.5 ui-monospace,Menlo,monospace; white-space:pre; color:#bcd0e4; }
+  .c-cur { color:var(--blue); animation:pulse 1s infinite; }
+  .c-acts { display:flex; gap:14px; margin:5px 6px 0; }
+  .c-acts button { background:none; border:none; padding:4px 0; font:600 10px ui-monospace,Menlo,monospace; letter-spacing:.14em; color:var(--dim); }
+  .c-acts button:active { color:var(--blue); }
+  .c-retry { align-self:center; margin:4px 0 10px; }
+  .c-status { flex:none; min-height:0; padding:0 14px; font-size:11px; letter-spacing:.06em; color:var(--dim); }
+  .c-status:not(:empty) { padding:4px 14px 6px; }
+  .c-status.err { color:var(--red); }
+  .c-bar { flex:none; padding:8px 10px 10px; border-top:1px solid var(--line); background:var(--panel); }
+  .c-inrow { display:flex; gap:8px; align-items:flex-end; }
+  .c-inrow textarea { margin:0; flex:1; resize:none; max-height:140px; min-height:46px; line-height:1.4; border-radius:14px; padding:12px 14px; }
+  .c-send { flex:none; width:46px; height:46px; border-radius:50%; border:none; background:var(--blue); color:#021018; font-size:20px; font-weight:800; }
+  .c-send.stop { background:var(--red); color:#220803; font-size:15px; }
+  .c-nomodel { text-align:center; }
+  .c-nomodel .rtxt { margin:0 0 10px; }
+  .c-list { flex:1; min-height:0; overflow-y:auto; padding:12px; }
+  .c-item { display:flex; gap:10px; align-items:center; cursor:pointer; }
+  .c-item .c-info { flex:1; min-width:0; }
+  .c-item .rname { font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .c-prev { color:var(--dim); font-size:13px; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .c-meta { font:10px ui-monospace,Menlo,monospace; letter-spacing:.12em; color:var(--dim); margin-top:6px; }
+  .c-del { flex:none; background:none; border:none; color:var(--dim); font-size:18px; padding:8px; }
+  .c-foot { flex:none; padding:10px 12px 14px; border-top:1px solid var(--line); background:var(--panel); }
+  #c-sheet { position:absolute; inset:0; display:none; align-items:flex-end; background:rgba(0,0,0,.6); z-index:5; }
+  #c-sheet.on { display:flex; }
+  .c-sheet-in { width:100%; max-height:88%; overflow-y:auto; background:var(--panel); border-top:1px solid var(--line); border-radius:18px 18px 0 0; padding:16px 16px 22px; animation:fade .2s ease; }
+  .c-sheet-in h3 { margin:0 0 12px; font:700 12px ui-monospace,Menlo,monospace; letter-spacing:.2em; color:var(--dim); }
+  .c-opt { display:block; width:100%; text-align:left; margin-bottom:8px; padding:14px; font-size:13px; }
+  .c-opt small { display:block; margin-top:3px; font-weight:400; letter-spacing:0; color:var(--dim); font-family:system-ui,sans-serif; }
+  .c-opt.danger { color:var(--red); }
+  .c-sheet-in input[type=range] { padding:0; margin:6px 0 14px; accent-color:var(--blue); }
+  .c-sheet-in label { display:block; }
+  #c-toast { position:absolute; left:50%; bottom:90px; transform:translateX(-50%); max-width:86%; background:#16202b; border:1px solid var(--blue); color:var(--text); padding:10px 16px; border-radius:20px; font-size:13px; z-index:9; display:none; text-align:center; }
+  #c-toast.on { display:block; animation:fade .2s ease; }
+  #c-toast.err { border-color:var(--red); }
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="chatRoot">
+  <div id="c-main"></div>
+  <div id="c-sheet"></div>
+  <div id="c-toast"></div>
+</div>
+
+
+<script>
+var KEY = 'nvel_v1';
+var state = load();
+var view = { screen: 'list', id: null };
+var testMode = false;
+var draft = { done: null, status: null };
+
+function load() {
+  try { var d = JSON.parse(localStorage.getItem(KEY)); if (d && d.mandates) return d; } catch (e) {}
+  return { mandates: [] };
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+function ymd(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+function parseD(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+function today() { return ymd(new Date()); }
+var DATE_RE = /^\d{4}-\d\d-\d\d$/;
+function uid() { return 'm' + Date.now().toString(36) + Math.floor(Math.random() * 1000); }
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function find(id) { return state.mandates.filter(function (m) { return m.id === id; })[0]; }
+function h(html) { document.getElementById('app').innerHTML = html; window.scrollTo(0, 0); }
+function pad(n) { return n < 100 ? ('00' + n).slice(-3) : String(n); }
+
+// каждый пропущенный день = «не сделал», статус «—» (нет данных, сигнала не даёт)
+function fillGaps(m) {
+  if (!m.start) m.start = (m.logs.length && DATE_RE.test(m.logs[0].date)) ? m.logs[0].date : today();
+  var last = m.logs.length ? m.logs[m.logs.length - 1].date : null;
+  var from;
+  if (last && DATE_RE.test(last)) { from = parseD(last); from.setDate(from.getDate() + 1); }
+  else from = parseD(m.start);
+  var y = parseD(today()); y.setDate(y.getDate() - 1);
+  var added = 0;
+  while (from <= y && added < 400) {
+    m.logs.push({ date: ymd(from), done: false, status: '—', change: false, auto: true });
+    from.setDate(from.getDate() + 1); added++;
+  }
+  if (added) save();
+}
+
+function lastStatuses(m, n) {
+  var l = m.logs.slice(-n);
+  return l.length === n ? l.map(function (x) { return x.status; }) : null;
+}
+function signal(m) {
+  var s = lastStatuses(m, 3);
+  if (!s) return null;
+  if (s.every(function (x) { return x === 'underload'; })) return 'underload';
+  if (s.every(function (x) { return x === 'overload'; })) return 'overload';
+  return null;
+}
+function metaDue(m) {
+  var n = m.logs.length;
+  return Math.floor(n / 30) > Math.floor((m.lastMetaAt || 0) / 30);
+}
+function nextMetaLeft(m) { return (Math.floor((m.lastMetaAt || 0) / 30) + 1) * 30 - m.logs.length; }
+function doneToday(m) { var l = m.logs[m.logs.length - 1]; return !!l && l.date === today(); }
+function loggedToday(m) { return testMode ? false : doneToday(m); }
+
+// ---------- тест-режим ----------
+function fill(id, status, n) {
+  var m = find(id);
+  for (var i = 0; i < n; i++) m.logs.push({ date: today(), done: true, status: status, change: false });
+  save(); openM(id);
+}
+function fillToMeta(id) {
+  var m = find(id);
+  var target = Math.ceil((m.logs.length + 1) / 30) * 30;
+  while (m.logs.length < target) m.logs.push({ date: today(), done: true, status: 'стабильно', change: false });
+  save(); openM(id);
+}
+function undoLog(id) { var m = find(id); m.logs.pop(); save(); openM(id); }
+function toggleTest() { testMode = !testMode; renderList(); }
+
+// ---------- приборы ----------
+function ledClass(s) { return s === 'underload' ? 'blue' : s === 'overload' ? 'red' : s === 'стабильно' ? 'green' : ''; }
+
+function needleValue(m) {
+  var map = { 'underload': -1, 'стабильно': 0, 'overload': 1 };
+  var s = [];
+  for (var i = m.logs.length - 1; i >= 0 && s.length < 5; i--) {
+    var st = m.logs[i].status;
+    if (map.hasOwnProperty(st)) s.push(map[st]);
+  }
+  if (!s.length) return 0;
+  return s.reduce(function (a, b) { return a + b; }, 0) / s.length;
+}
+function stateLabel(m, v) {
+  if (!m.logs.some(function (l) { return map3(l.status); })) return ['ОЖИДАНИЕ ДАННЫХ', ''];
+  if (v <= -0.34) return ['НЕДОГРУЗКА', 'blue'];
+  if (v >= 0.34) return ['ПЕРЕГРУЗКА', 'red'];
+  return ['СТАБИЛЬНО', 'green'];
+}
+function map3(s) { return s === 'underload' || s === 'overload' || s === 'стабильно'; }
+
+function polar(a, r) { var rad = a * Math.PI / 180; return [120 + r * Math.sin(rad), 120 - r * Math.cos(rad)]; }
+function arcPath(a0, a1, r) {
+  var p0 = polar(a0, r), p1 = polar(a1, r);
+  return 'M' + p0[0].toFixed(1) + ' ' + p0[1].toFixed(1) + ' A' + r + ' ' + r + ' 0 0 1 ' + p1[0].toFixed(1) + ' ' + p1[1].toFixed(1);
+}
+function gauge(v) {
+  var ang = Math.round(v * 80);
+  var ticks = '';
+  for (var a = -80; a <= 80; a += 20) {
+    var p = polar(a, 80), q = polar(a, 88);
+    ticks += '<line class="g-tick" x1="' + p[0].toFixed(1) + '" y1="' + p[1].toFixed(1) + '" x2="' + q[0].toFixed(1) + '" y2="' + q[1].toFixed(1) + '"/>';
+  }
+  return '<svg class="gauge" viewBox="0 0 240 150">' +
+    '<path class="g-arc g-blue" d="' + arcPath(-90, -32, 100) + '"/>' +
+    '<path class="g-arc g-green" d="' + arcPath(-28, 28, 100) + '"/>' +
+    '<path class="g-arc g-red" d="' + arcPath(32, 90, 100) + '"/>' +
+    ticks +
+    '<text class="g-txt" x="14" y="142">UNDER</text>' +
+    '<text class="g-txt" x="226" y="142" text-anchor="end">OVER</text>' +
+    '<g class="needle" style="--a:' + ang + 'deg"><line x1="120" y1="120" x2="120" y2="40"/><circle cx="120" cy="120" r="8"/></g>' +
+    '</svg>';
+}
+function streakLeds(m) {
+  var o = '';
+  for (var i = 0; i < 3; i++) {
+    var idx = m.logs.length - 3 + i;
+    var x = idx >= 0 ? m.logs[idx] : null;
+    o += '<span class="led ' + (x ? ledClass(x.status) : '') + '"></span>';
+  }
+  return o;
+}
+function lamp(label, on, color) { return '<span class="lamp' + (on ? ' on l-' + color : '') + '"><i></i>' + label + '</span>'; }
+function strip(m) {
+  var l = m.logs.slice(-30), o = '<div class="strip">';
+  for (var i = 0; i < 30; i++) {
+    var x = l[i - (30 - l.length)];
+    var c = !x ? 'c-none' : !x.done ? 'c-miss' : 'c-' + (ledClass(x.status) || 'green');
+    o += '<span class="cell ' + c + '"></span>';
+  }
+  return o + '</div>';
+}
+function topBar(title) {
+  return '<div class="top"><div class="brand"><span class="beat"></span>NVEL<small>' + title + '</small></div><div class="mono date">' + today() + '</div></div>';
+}
+
+// ---------- экраны ----------
+function renderList() {
+  view.screen = 'list';
+  state.mandates.forEach(fillGaps);
+  var total = state.mandates.length, done = 0, sigs = 0;
+  state.mandates.forEach(function (m) { if (doneToday(m)) done++; if (signal(m) || metaDue(m)) sigs++; });
+  var out = '<div class="screen">' + topBar('УПРАВЛЕНИЕ') +
+    '<div class="panel summary"><div class="sum"><b>' + total + '</b><span>МАНДАТОВ</span></div>' +
+    '<div class="sum"><b>' + done + '/' + total + '</b><span>СЕГОДНЯ</span></div>' +
+    '<div class="sum"><b>' + sigs + '</b><span>СИГНАЛОВ</span></div></div>';
+  if (!total) out += '<div class="empty">Активных мандатов нет.<br>Запусти первый кнопкой внизу.</div>';
+  state.mandates.forEach(function (m) {
+    var v = needleValue(m), sg = signal(m), st = stateLabel(m, v);
+    out += '<div class="panel reactor" onclick="openM(\'' + m.id + '\')">' +
+      '<div class="rtop"><span class="rname">' + esc(m.name) + '</span><span class="iter mono">ИТ ' + pad(m.logs.length + 1) + '</span></div>' +
+      '<div class="rbody"><div class="mini">' + gauge(v) + '</div><div class="rside">' +
+      '<div class="st ' + st[1] + ' mono">' + st[0] + '</div>' +
+      '<div class="leds">' + streakLeds(m) + '</div>' +
+      '<div class="lamps">' + lamp('СИГНАЛ', !!sg, sg === 'underload' ? 'blue' : 'red') + lamp('МЕТА', metaDue(m), 'amber') + '</div>' +
+      '</div></div>' +
+      '<div class="rtxt">' + esc(m.text) + '</div>' + strip(m) +
+      '<div class="rfoot mono">' + (doneToday(m) ? 'СЕГОДНЯ ЗАПИСАНО' : 'ОЖИДАЕТ ЗАПИСИ') + ' · МЕТА Т-' + nextMetaLeft(m) + '</div></div>';
+  });
+  out += '<div style="margin-top:18px"><button class="btn small' + (testMode ? ' sel-up' : '') + '" onclick="toggleTest()">Тест-режим: ' + (testMode ? 'ВКЛ' : 'выкл') + '</button></div>';
+  out += '<div class="dock"><div class="row" style="gap:8px"><button class="btn" style="flex:1" onclick="openChat()">ЧАТ С МОДЕЛЬЮ</button><button class="btn primary" style="flex:1.4" onclick="renderForm()">+ НОВЫЙ МАНДАТ</button></div></div></div>';
+  h(out);
+}
+
+function renderForm(id) {
+  view.screen = 'form';
+  var m = id ? find(id) : null;
+  var out = '<div class="screen">' + topBar(m ? 'ПРАВКА' : 'НОВЫЙ МАНДАТ') +
+    '<div class="panel"><div class="lbl">ДОМЕН</div><input id="f_name" value="' + esc(m ? m.name : '') + '" placeholder="Гитара">' +
+    '<div class="lbl">МАНДАТ (действие на один день)</div><textarea id="f_text" rows="2" placeholder="30 минут: 15 гаммы + 15 разбор">' + esc(m ? m.text : '') + '</textarea>' +
+    '<div class="lbl">КРИТЕРИЙ ВЫПОЛНЕНИЯ</div><select id="f_crit">' +
+    '<option value="time"' + (m && m.criterion === 'time' ? ' selected' : '') + '>Временной (потребление / удержание)</option>' +
+    '<option value="volume"' + (m && m.criterion === 'volume' ? ' selected' : '') + '>Объёмный (производство результата)</option></select>' +
+    '<div class="lbl">МИКРО-МАНДАТЫ (по одному в строке)</div><textarea id="f_micro" rows="4">' + esc(m ? m.micro.join('\n') : '') + '</textarea></div>' +
+    aiPanel() +
+    '<div class="row"><button class="btn" style="flex:1;background:var(--blue);color:#021018;border:none" onclick="saveForm(' + (id ? "'" + id + "'" : 'null') + ')">СОХРАНИТЬ</button>' +
+    '<button class="btn" onclick="' + (id ? "openM('" + id + "')" : 'renderList()') + '">ОТМЕНА</button></div></div>';
+  h(out);
+}
+
+// ---------- ИИ-декомпозиция (вне цикла, только черновик) ----------
+function aiBridge() { return (typeof NvelAI !== 'undefined') ? NvelAI : null; }
+function aiStatus() {
+  var b = aiBridge();
+  if (!b) return { available: false };
+  try { return JSON.parse(b.status()); } catch (e) { return { available: false }; }
+}
+function aiPanelInner() {
+  var s = aiStatus();
+  var o = '<div class="lbl">ИИ-ДЕКОМПОЗИЦИЯ · ВНЕ ЦИКЛА</div>';
+  if (!s.available) {
+    return o + '<div class="rtxt">Работает только в приложении на телефоне.</div>';
+  }
+  if (!s.hasModel) {
+    o += '<div class="rtxt">Выбери файл модели .gguf на телефоне. Он один раз скопируется внутрь приложения.</div>' +
+      '<button class="btn" onclick="aiPick()">ВЫБРАТЬ МОДЕЛЬ (.gguf)</button>';
+  } else {
+    o += '<div class="rtxt">Модель: ' + s.modelMb + ' МБ' + (s.loaded ? ' · в памяти' : '') + '</div>' +
+      '<div class="row"><button class="btn" id="ai_go" onclick="aiRun()">РАЗБИТЬ НА МИКРО-МАНДАТЫ</button>' +
+      '<button class="btn small" id="ai_stop" onclick="aiCancel()" style="display:none">СТОП</button></div>' +
+      '<div class="row" style="margin-top:10px"><button class="btn small" onclick="aiPick()">СМЕНИТЬ МОДЕЛЬ</button>' +
+      '<button class="btn small" onclick="aiDelete()">УДАЛИТЬ МОДЕЛЬ</button></div>';
+  }
+  return o + '<div id="ai_msg" class="rtxt" style="margin-top:10px"></div><pre id="ai_out" class="aiout"></pre>' +
+    '<div class="rfoot mono">ИИ только предлагает черновик. Сигналы, лог и решения остаются за тобой.</div>';
+}
+function aiPanel() { return '<div class="panel" id="ai_panel">' + aiPanelInner() + '</div>'; }
+function aiRefresh() { var p = document.getElementById('ai_panel'); if (p) p.innerHTML = aiPanelInner(); }
+function aiMsg(s) { var e = document.getElementById('ai_msg'); if (e) e.textContent = s; }
+function aiOut(s) { var e = document.getElementById('ai_out'); if (e) e.textContent = s; }
+function aiBusyUi(on) {
+  var g = document.getElementById('ai_go'), s = document.getElementById('ai_stop');
+  if (g) g.disabled = on;
+  if (s) s.style.display = on ? '' : 'none';
+}
+function aiPick() { var b = aiBridge(); if (b) { aiMsg('Выбери файл .gguf в окне телефона...'); b.pickModel(); } }
+function aiCancel() { var b = aiBridge(); if (b) b.cancel(); }
+function aiDelete() {
+  var b = aiBridge();
+  if (b && confirm('Удалить модель с телефона?')) b.deleteModel();
+}
+
+function aiPrompt(domain, mandate) {
+  var has = !!mandate;
+  return 'Ты помогаешь составить задачу на один день.\n' +
+    'Область: ' + domain + '\n' +
+    (has ? 'Задача на день: ' + mandate + '\n' : '') +
+    '\nПравила:\n' +
+    '1. ' + (has ? '' : 'Сначала придумай простую задачу на один день одной строкой. ') +
+    'Разбей задачу на 3-5 конкретных действий, которые выполняются подряд, без выбора и решений.\n' +
+    '2. Каждое действие в одну строку, начинается с глагола, без пояснений и без отдельного времени.\n' +
+    '3. Критерий: "время", если задача про чтение, изучение, прослушивание или удержание процесса. ' +
+    '"объём", если нужно создать результат: написать, сделать, решить.\n' +
+    '\nОтвечай строго в таком формате и ничего больше:\n' +
+    (has ? '' : 'МАНДАТ: <задача одной строкой>\n') +
+    'КРИТЕРИЙ: время или объём\n- действие\n- действие\n- действие\n' +
+    '\nПример.\nОбласть: Гитара\nЗадача на день: 30 минут игры\n' +
+    'КРИТЕРИЙ: время\n- Разогреть пальцы гаммой До мажор\n- Сыграть гамму три раза под метроном\n- Разобрать один такт выбранной песни\n' +
+    '\nТеперь твой ответ.';
+}
+
+function aiParse(text) {
+  var crit = null, mand = '', micro = [];
+  text.split('\n').forEach(function (line) {
+    var t = line.trim();
+    if (!t) return;
+    var a = /^\**\s*КРИТЕРИЙ\s*\**\s*:\s*(.+)$/i.exec(t);
+    if (a) { crit = /объ[её]м/i.test(a[1]) ? 'volume' : 'time'; return; }
+    var b = /^\**\s*МАНДАТ\s*\**\s*:\s*(.+)$/i.exec(t);
+    if (b) { mand = b[1].replace(/\*+/g, '').trim(); return; }
+    var c = /^(?:[-*•–]|\d+[.)])\s+(.+)$/.exec(t);
+    if (c) micro.push(c[1].replace(/\*+/g, '').trim());
+  });
+  return { crit: crit, mand: mand, micro: micro.slice(0, 7) };
+}
+
+function aiRun() {
+  var b = aiBridge(); if (!b) return;
+  var name = document.getElementById('f_name').value.trim();
+  var text = document.getElementById('f_text').value.trim();
+  if (!name) { alert('Сначала впиши домен'); return; }
+  aiOut('');
+  aiBusyUi(true);
+  aiMsg('Запускаю нейросеть...');
+  b.generate(aiPrompt(name, text), 220);
+}
+
+function aiApply(text) {
+  var d = aiParse(text);
+  if (!d.micro.length) { aiMsg('Не получилось разобрать ответ. Нажми ещё раз.'); return; }
+  var c = document.getElementById('f_crit'), t = document.getElementById('f_text'), mi = document.getElementById('f_micro');
+  if (c && d.crit) c.value = d.crit;
+  if (t && !t.value.trim() && d.mand) t.value = d.mand;
+  if (mi) mi.value = d.micro.join('\n');
+  aiMsg('Черновик вставлен в форму. Проверь, поправь и сохрани.');
+}
+
+window.nvelAiEvent = function (e) {
+  if (!e) return;
+  var mb = function (n) { return Math.round(n / 1048576); };
+  switch (e.type) {
+    case 'copyProgress':
+      aiMsg('Копирую модель: ' + mb(e.done) + (e.total > 0 ? ' из ' + mb(e.total) + ' МБ (' + Math.floor(e.done * 100 / e.total) + '%)' : ' МБ'));
+      break;
+    case 'copyDone': aiRefresh(); aiMsg('Модель сохранена.'); break;
+    case 'copyCancel': aiMsg(''); break;
+    case 'modelDeleted': aiRefresh(); aiMsg('Модель удалена.'); break;
+    case 'loading': aiMsg('Загружаю модель в память (при первом запуске до минуты)...'); break;
+    case 'started': aiMsg('Нейросеть думает...'); break;
+    case 'token': aiOut(e.text); break;
+    case 'done': aiBusyUi(false); aiOut(e.text); aiApply(e.text); break;
+    case 'error': aiBusyUi(false); aiMsg('Ошибка: ' + e.message); break;
+  }
+};
+
+function saveForm(id) {
+  var name = document.getElementById('f_name').value.trim();
+  var text = document.getElementById('f_text').value.trim();
+  if (!name || !text) { alert('Заполни домен и мандат'); return; }
+  var crit = document.getElementById('f_crit').value;
+  var micro = document.getElementById('f_micro').value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+  if (id) {
+    var m = find(id);
+    var changed = m.text !== text;
+    m.name = name; m.criterion = crit; m.micro = micro;
+    if (changed) { m.text = text; m.pendingChange = true; }
+    save(); openM(id);
+  } else {
+    var nm = { id: uid(), name: name, text: text, criterion: crit, micro: micro, logs: [], start: today(), lastMetaAt: 0, pendingChange: false, frozen: false };
+    state.mandates.push(nm);
+    save(); renderList();
+  }
+}
+
+function openM(id) {
+  view = { screen: 'm', id: id };
+  var m = find(id);
+  fillGaps(m);
+  if (metaDue(m)) runMeta(m);
+  var sig = signal(m), v = needleValue(m), st = stateLabel(m, v);
+  var forcedLeft = (m.forcedUntil || 0) - m.logs.length;
+  var mleft = nextMetaLeft(m);
+
+  var out = '<div class="screen">' + topBar('МАНДАТ') +
+    '<div class="row between"><button class="btn small" onclick="renderList()">← НАЗАД</button>' +
+    '<button class="btn small" onclick="renderForm(\'' + id + '\')">ИЗМЕНИТЬ</button></div>' +
+    '<div class="hero"><div class="hname">' + esc(m.name) + '</div>' +
+    '<div class="hsub mono">ИТЕРАЦИЯ ' + (m.logs.length + 1) + ' · ' + (m.criterion === 'time' ? 'ВРЕМЕННОЙ' : 'ОБЪЁМНЫЙ') + ' КРИТЕРИЙ</div></div>' +
+
+    '<div class="panel center"><div class="lbl">КРИТИЧНОСТЬ ЯДРА</div>' + gauge(v) +
+    '<div class="st big ' + st[1] + ' mono">' + st[0] + '</div>' +
+    '<div class="lbl">ПОСЛЕДНИЕ 3 СИГНАЛА</div><div class="leds" style="justify-content:center">' + streakLeds(m) + '</div>' +
+    '<div class="lamps wrap">' +
+    lamp('АПГРЕЙД', sig === 'underload' && !m.frozen && forcedLeft <= 0, 'blue') +
+    lamp('СТАБИЛИЗАЦИЯ', sig === 'overload', 'red') +
+    lamp('ЗАМОРОЗКА', !!m.frozen, 'amber') +
+    lamp('ПРИНУД. СТАБ.', forcedLeft > 0, 'red') +
+    lamp('МЕТА Т-' + mleft, mleft <= 3, 'amber') +
+    '</div></div>' +
+
+    '<div class="panel"><div class="lbl">МАНДАТ</div><div class="mtext">' + esc(m.text) + '</div>' +
+    (m.micro.length ? '<ul class="micro">' + m.micro.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') + '</div>';
+
+  if (m.lastMeta) out += metaBanner(m);
+  if (forcedLeft > 0) {
+    out += '<div class="adv down"><b>Принудительная стабилизация</b><br>Осталось дней: ' + forcedLeft +
+      '. Мандат на минимально выполнимом уровне, апгрейды запрещены.</div>';
+  }
+  if (sig === 'underload' && !m.frozen && forcedLeft <= 0) {
+    out += '<div class="adv up"><b>Устойчивый underload (3 подряд)</b><br>Апгрейд: усложни мандат на 1–10%, не меняя характер задачи. Нажми «Изменить».</div>';
+  } else if (sig === 'underload' && m.frozen) {
+    out += '<div class="adv warn">Апгрейды заморожены после сбоя мета-ревизии.</div>';
+  }
+  if (sig === 'overload') {
+    out += '<div class="adv down"><b>Устойчивый overload (3 подряд)</b><br>Стабилизация: упрости мандат на 30–50% до выполнимого уровня. Нажми «Изменить».</div>';
+  }
+
+  if (loggedToday(m)) {
+    out += '<div class="panel"><div class="lbl">ЛОГ</div><div class="mono" style="font-size:13px;color:var(--green)">СЕГОДНЯ ЗАПИСАНО</div></div>';
+  } else {
+    out += '<div class="panel"><div class="lbl">ЗАПИСЬ ЗА СЕГОДНЯ</div>' +
+      '<div class="row"><button class="btn tog" id="d_yes" onclick="pick(\'done\',true)">ВЫПОЛНЕНО</button>' +
+      '<button class="btn tog" id="d_no" onclick="pick(\'done\',false)">НЕ ВЫПОЛНЕНО</button></div>' +
+      '<div class="lbl" style="margin-top:14px">СТАТУС СИСТЕМЫ</div><div class="row">' +
+      '<button class="btn tog" id="s_under" onclick="pick(\'status\',\'underload\')">UNDERLOAD</button>' +
+      '<button class="btn tog" id="s_stable" onclick="pick(\'status\',\'стабильно\')">СТАБИЛЬНО</button>' +
+      '<button class="btn tog" id="s_over" onclick="pick(\'status\',\'overload\')">OVERLOAD</button></div>' +
+      '<button class="btn primary exec" onclick="addLog(\'' + id + '\')">ЗАПИСАТЬ В ЛОГ</button></div>';
+  }
+
+  if (m.logs.length) {
+    out += '<div class="panel"><div class="lbl">ЛЕНТА · ПОСЛЕДНИЕ 30 ИТЕРАЦИЙ</div>' + strip(m) + '</div>';
+    out += '<div class="panel"><div class="lbl">ЛОГ</div><div class="logl">' + m.logs.slice(-14).reverse().map(function (l, i) {
+      var n = m.logs.length - i;
+      return 'ИТ ' + pad(n) + ' · ' + l.date + ' · ' + (l.done ? 'да' : 'нет') + ' · ' + l.status + (l.change ? ' · мандат изменён' : '');
+    }).join('<br>') + '</div></div>';
+  }
+
+  if (testMode) {
+    out += '<div class="adv warn"><b>Тест-режим</b><br>Проверяй на отдельном тестовом мандате и потом удали его.<div class="row" style="margin-top:8px">' +
+      '<button class="btn small" onclick="fill(\'' + id + '\',\'underload\',3)">+3 UNDERLOAD</button>' +
+      '<button class="btn small" onclick="fill(\'' + id + '\',\'overload\',3)">+3 OVERLOAD</button>' +
+      '<button class="btn small" onclick="fillToMeta(\'' + id + '\')">ДО МЕТА-РЕВИЗИИ</button>' +
+      '<button class="btn small" onclick="undoLog(\'' + id + '\')">УБРАТЬ ПОСЛЕДНЮЮ</button></div></div>';
+  }
+  out += '<div style="margin-top:8px"><button class="btn small" onclick="delM(\'' + id + '\')">УДАЛИТЬ МАНДАТ</button></div></div>';
+  h(out);
+}
+
+function pick(k, v) {
+  draft[k] = v;
+  var set = function (id, cls, on) { var e = document.getElementById(id); if (e) e.className = 'btn tog' + (on ? ' ' + cls : ''); };
+  if (k === 'done') { set('d_yes', 'sel-ok', v === true); set('d_no', 'sel-no', v === false); }
+  else {
+    set('s_under', 'sel-up', v === 'underload');
+    set('s_stable', 'sel-ok', v === 'стабильно');
+    set('s_over', 'sel-down', v === 'overload');
+  }
+}
+
+function addLog(id) {
+  if (draft.done === null || draft.status === null) { alert('Выбери выполнение и статус'); return; }
+  var m = find(id);
+  fillGaps(m);
+  m.logs.push({ date: today(), done: draft.done, status: draft.status, change: !!m.pendingChange });
+  m.pendingChange = false;
+  draft = { done: null, status: null };
+  save(); openM(id);
+}
+
+function runMeta(m) {
+  var n = m.logs.length;
+  var p = m.logs.slice(m.lastMetaAt || 0);
+  var q1 = p.some(function (l) { return l.change; });
+  var q2 = false, q3 = false;
+  for (var i = 0; i + 2 < p.length; i++) {
+    var s = [p[i].status, p[i + 1].status, p[i + 2].status];
+    var after = p.slice(i + 3).some(function (l) { return l.change; });
+    if (s.every(function (x) { return x === 'overload'; }) && after) q2 = true;
+    if (s.every(function (x) { return x === 'underload'; }) && !after) q3 = true;
+  }
+  // плохие ответы: q1 «нет», q2 «нет», q3 «да» (underload игнорируется). Два и больше = сбой
+  var bad = (q1 ? 0 : 1) + (q2 ? 0 : 1) + (q3 ? 1 : 0);
+  var fail = bad >= 2;
+  var prevFail = !!(m.lastMeta && m.lastMeta.fail);
+  m.lastMeta = { at: n, q1: q1, q2: q2, q3: q3, fail: fail, forced: fail && prevFail };
+  m.frozen = fail;
+  if (m.lastMeta.forced) m.forcedUntil = n + 7;
+  m.lastMetaAt = n;
+  save();
+}
+
+function metaBanner(m) {
+  var x = m.lastMeta;
+  var yn = function (v) { return v === null ? 'не применимо' : v ? 'да' : 'нет'; };
+  return '<div class="adv ' + (x.fail ? 'down' : 'warn') + '"><b>Мета-ревизия, итерация ' + x.at + ' (посчитана автоматически)</b><br>' +
+    'Мандат менялся фактически: ' + yn(x.q1) + '<br>Overload привёл к упрощению: ' + yn(x.q2) + '<br>Underload игнорируется: ' + yn(x.q3) + '<br><br>' +
+    (x.forced ? '<b>Повторный сбой:</b> принудительная стабилизация. Упрости мандат до минимума минимум на 7 дней, без апгрейдов.' :
+      x.fail ? '<b>Сбой:</b> режим симуляции адаптации. Апгрейды заморожены. Упрости мандат до минимально выполнимого.' :
+      'Система продолжает адаптироваться.') + '</div>';
+}
+
+function delM(id) {
+  if (!confirm('Удалить мандат и весь лог?')) return;
+  state.mandates = state.mandates.filter(function (m) { return m.id !== id; });
+  save(); renderList();
+}
+
+
+// =====================================================================
+// ЧАТ С ЛОКАЛЬНОЙ МОДЕЛЬЮ
+// =====================================================================
+var CHAT_KEY = 'nvel_chats_v1';
+var CHAT_NEW_TITLE = 'Новый чат';
+var chatDB = chatLoad();
+var cv = { open: false, screen: 'list', id: null, gen: null, sheet: false, confirmFn: null, toastT: null };
+
+function aiBridge() { return window.NvelAI || null; }
+function aiStatus() {
+  try {
+    var b = aiBridge();
+    if (!b) return { available: false };
+    return JSON.parse(b.status());
+  } catch (e) { return { available: false }; }
+}
+function aiPick() { var b = aiBridge(); if (b) b.pickModel(); }
+
+function $(id) { return document.getElementById(id); }
+function chatLoad() {
+  var def = { system: '', temp: 0.7, maxTokens: 512 };
+  try {
+    var d = JSON.parse(localStorage.getItem(CHAT_KEY));
+    if (d && d.chats) { d.settings = Object.assign({}, def, d.settings || {}); return d; }
+  } catch (e) {}
+  return { chats: [], settings: def };
+}
+function chatSave() { try { localStorage.setItem(CHAT_KEY, JSON.stringify(chatDB)); } catch (e) {} }
+function chatId() { return 'c' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36); }
+function chatById(id) { return chatDB.chats.filter(function (c) { return c.id === id; })[0]; }
+function curChat() { return chatById(cv.id); }
+function p2(n) { return ('0' + n).slice(-2); }
+function fdate(ts) { var d = new Date(ts); return p2(d.getDate()) + '.' + p2(d.getMonth() + 1) + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()); }
+function ftime(ts) { var d = new Date(ts); return p2(d.getHours()) + ':' + p2(d.getMinutes()); }
+
+function inlineFmt(s) {
+  s = esc(s);
+  s = s.replace(/^#{1,4}\s+(.+)$/gm, '<b>$1</b>');
+  s = s.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+  s = s.replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>');
+  return s;
+}
+function fmt(t) {
+  var parts = String(t).split('```'), o = '';
+  for (var i = 0; i < parts.length; i++) {
+    var part = parts[i];
+    if (i % 2 === 1) {
+      var nl = part.indexOf('\n');
+      if (nl >= 0 && nl < 24 && /^[\w+#.-]*$/.test(part.slice(0, nl).trim())) part = part.slice(nl + 1);
+      o += '<pre class="c-code">' + esc(part.replace(/\n$/, '')) + '</pre>';
+    } else {
+      if (i > 0) part = part.replace(/^\n/, '');
+      if (i < parts.length - 1) part = part.replace(/\n$/, '');
+      o += inlineFmt(part);
+    }
+  }
+  return o;
+}
+
+function openChat() {
+  cv.open = true;
+  $('chatRoot').className = 'on';
+  chatRenderList();
+}
+function closeChat() {
+  cv.open = false;
+  closeSheet();
+  $('chatRoot').className = '';
+  renderList();
+}
+window.nvelBack = function () {
+  if (cv.sheet) { closeSheet(); return true; }
+  if (cv.open) { if (cv.screen === 'view') chatRenderList(); else closeChat(); return true; }
+  if (view && view.screen && view.screen !== 'list') { renderList(); return true; }
+  return false;
+};
+
+function chatRenderList() {
+  cv.screen = 'list'; cv.id = null;
+  var out = '<div class="c-head"><button class="btn small c-ic" onclick="closeChat()">←</button>' +
+    '<div class="c-title">ЧАТЫ<small>ЛОКАЛЬНАЯ МОДЕЛЬ</small></div>' +
+    '<button class="btn small" onclick="chatSettingsSheet()">НАСТРОЙКИ</button></div>' +
+    '<div class="c-list">';
+  if (!chatDB.chats.length) {
+    out += '<div class="empty">Чатов пока нет.<br>Нажми «+ НОВЫЙ ЧАТ» и пиши модели прямо на телефоне.</div>';
+  }
+  chatDB.chats.forEach(function (c) {
+    var last = c.messages.length ? c.messages[c.messages.length - 1] : null;
+    var prev = last ? (last.role === 'user' ? 'Вы: ' : '') + last.content.replace(/\s+/g, ' ').slice(0, 90) : 'Пустой чат';
+    var live = cv.gen && cv.gen.chatId === c.id;
+    out += '<div class="panel c-item" onclick="chatOpen(\'' + c.id + '\')"><div class="c-info">' +
+      '<div class="rname">' + esc(c.title) + '</div><div class="c-prev">' + esc(prev) + '</div>' +
+      '<div class="c-meta">' + fdate(c.updated) + ' · ' + c.messages.length + ' СООБЩ.' + (live ? ' · ПИШЕТ…' : '') + '</div></div>' +
+      '<button class="c-del" onclick="event.stopPropagation();chatDeleteAsk(\'' + c.id + '\')">✕</button></div>';
+  });
+  out += '</div><div class="c-foot"><button class="btn primary" onclick="chatNew()">+ НОВЫЙ ЧАТ</button></div>';
+  $('c-main').innerHTML = out;
+}
+
+function chatNew() {
+  if (cv.screen === 'view') {
+    var cur = curChat();
+    if (cur && !cur.messages.length) { var ta = $('c-ta'); if (ta) ta.focus(); return; }
+  }
+  var c = { id: chatId(), title: CHAT_NEW_TITLE, created: Date.now(), updated: Date.now(), messages: [] };
+  chatDB.chats.unshift(c);
+  chatSave();
+  chatOpen(c.id);
+}
+function chatOpen(id) {
+  if (!chatById(id)) return;
+  cv.id = id;
+  chatRenderView();
+}
+function chatDeleteAsk(id) {
+  var c = chatById(id); if (!c) return;
+  chatConfirm('Удалить чат «' + esc(c.title) + '» вместе со всей перепиской?', 'УДАЛИТЬ', function () {
+    if (cv.gen && cv.gen.chatId === id) { var b = aiBridge(); if (b) b.cancel(); }
+    chatDB.chats = chatDB.chats.filter(function (x) { return x.id !== id; });
+    chatSave();
+    chatRenderList();
+  });
+}
+
+function chatRenderView() {
+  cv.screen = 'view';
+  var c = curChat();
+  $('c-main').innerHTML =
+    '<div class="c-head"><button class="btn small c-ic" onclick="chatRenderList()">←</button>' +
+    '<div class="c-title" id="c-title" onclick="chatRenameSheet()">' + esc(c.title) + '</div>' +
+    '<button class="btn small" onclick="chatExportSheet()">ЭКСПОРТ</button>' +
+    '<button class="btn small c-ic" onclick="chatNew()">+</button>' +
+    '<button class="btn small c-ic" onclick="chatMenuSheet()">⋯</button></div>' +
+    '<div class="c-msgs" id="c-msgs"></div>' +
+    '<div class="c-status mono" id="c-status"></div>' +
+    '<div class="c-bar">' +
+    '<div class="c-nomodel" id="c-nomodel" style="display:none"></div>' +
+    '<div class="c-inrow" id="c-inrow"><textarea id="c-ta" rows="1" placeholder="Сообщение…" oninput="chatAutosize()"></textarea>' +
+    '<button class="c-send" id="c-send" onclick="chatSendOrStop()">↑</button></div></div>';
+  chatSyncBar();
+  renderMessages(true);
+  if (cv.gen && cv.gen.chatId === c.id) chatStatus('Нейросеть думает…');
+}
+
+function chatAutosize() {
+  var ta = $('c-ta'); if (!ta) return;
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 140) + 'px';
+}
+function chatStatus(t, isErr) {
+  var e = $('c-status'); if (!e) return;
+  e.textContent = t || '';
+  e.className = 'c-status mono' + (isErr ? ' err' : '');
+}
+
+function chatSyncBar() {
+  var st = aiStatus(), nm = $('c-nomodel'), row = $('c-inrow'), send = $('c-send');
+  if (!nm || !row) return;
+  if (!st.available) {
+    nm.style.display = ''; row.style.display = 'none';
+    nm.innerHTML = '<div class="rtxt">Чат с моделью работает только в приложении на телефоне.</div>';
+  } else if (!st.hasModel) {
+    nm.style.display = ''; row.style.display = 'none';
+    nm.innerHTML = '<div class="rtxt">Чтобы начать, выбери файл модели .gguf на телефоне. Он один раз скопируется внутрь приложения.</div>' +
+      '<button class="btn primary" onclick="aiPick()">ВЫБРАТЬ МОДЕЛЬ (.gguf)</button><div class="rtxt" id="c-model-msg" style="margin-top:8px"></div>';
+  } else {
+    nm.style.display = 'none'; row.style.display = '';
+  }
+  if (send) {
+    var on = !!cv.gen;
+    send.className = 'c-send' + (on ? ' stop' : '');
+    send.textContent = on ? '■' : '↑';
+  }
+}
+
+function msgHtml(m, i, isLast) {
+  var live = !!cv.gen && isLast && m.role === 'assistant';
+  var user = m.role === 'user';
+  var body = fmt(m.content) + (live ? '<span class="c-cur">▍</span>' : '');
+  var acts = '';
+  if (!user && !live && m.content) {
+    acts = '<div class="c-acts"><button onclick="chatCopyMsg(' + i + ')">КОПИРОВАТЬ</button>' +
+      (isLast ? '<button onclick="chatRegen()">ЗАНОВО</button>' : '') + '</div>';
+  }
+  return '<div class="c-msg ' + (user ? 'user' : 'ai') + '"><div class="c-who">' + (user ? 'ВЫ' : 'НЕЙРОСЕТЬ') + ' · ' + ftime(m.ts) + '</div>' +
+    '<div class="c-body" id="c-b-' + i + '">' + body + '</div>' + acts + '</div>';
+}
+function renderMessages(stick) {
+  var c = curChat(), box = $('c-msgs'); if (!c || !box) return;
+  var keep = box.scrollTop;
+  if (!c.messages.length) {
+    box.innerHTML = '<div class="empty">Напиши первое сообщение.<br>Модель работает прямо на телефоне, без интернета.</div>';
+    return;
+  }
+  var out = '';
+  c.messages.forEach(function (m, i) { out += msgHtml(m, i, i === c.messages.length - 1); });
+  var last = c.messages[c.messages.length - 1];
+  if (!cv.gen && last.role === 'user') {
+    out += '<button class="btn small c-retry" onclick="chatRegen()">ПОЛУЧИТЬ ОТВЕТ</button>';
+  }
+  box.innerHTML = out;
+  box.scrollTop = stick ? box.scrollHeight : keep;
+}
+function chatScrollEnd() { var b = $('c-msgs'); if (b) b.scrollTop = b.scrollHeight; }
+window.addEventListener('resize', function () { if (cv.open && cv.screen === 'view') chatScrollEnd(); });
+
+function chatSendOrStop() {
+  if (cv.gen) { var b = aiBridge(); if (b) { b.cancel(); chatStatus('Останавливаю…'); } return; }
+  chatSend();
+}
+function chatSend() {
+  var c = curChat(), ta = $('c-ta'); if (!c || !ta) return;
+  var text = ta.value.trim(); if (!text) return;
+  var st = aiStatus();
+  if (!st.available || !st.hasModel) { chatSyncBar(); return; }
+  if (st.busy) { chatStatus('Нейросеть сейчас занята, подожди…', true); return; }
+  c.messages.push({ role: 'user', content: text, ts: Date.now() });
+  if (!c.title || c.title === CHAT_NEW_TITLE) {
+    c.title = text.replace(/\s+/g, ' ').slice(0, 40);
+    var t = $('c-title'); if (t) t.textContent = c.title;
+  }
+  ta.value = ''; chatAutosize();
+  chatStartGen(c);
+}
+function chatRegen() {
+  if (cv.gen) return;
+  var c = curChat(); if (!c || !c.messages.length) return;
+  var st = aiStatus();
+  if (!st.available || !st.hasModel) { chatSyncBar(); return; }
+  if (st.busy) { chatStatus('Нейросеть сейчас занята, подожди…', true); return; }
+  if (c.messages[c.messages.length - 1].role === 'assistant') c.messages.pop();
+  if (!c.messages.length) { renderMessages(false); return; }
+  chatStartGen(c);
+}
+function chatHistory(c) {
+  var out = [], sys = (chatDB.settings.system || '').trim();
+  if (sys) out.push({ role: 'system', content: sys });
+  c.messages.forEach(function (m) {
+    if (!m.content) return;
+    var prev = out[out.length - 1];
+    if (prev && prev.role === m.role && m.role !== 'system') prev.content += '\n\n' + m.content;
+    else out.push({ role: m.role, content: m.content });
+  });
+  return out;
+}
+function chatStartGen(c) {
+  var hist = chatHistory(c);
+  c.messages.push({ role: 'assistant', content: '', ts: Date.now() });
+  c.updated = Date.now();
+  chatDB.chats.sort(function (a, b) { return b.updated - a.updated; });
+  chatSave();
+  cv.gen = { chatId: c.id };
+  renderMessages(true);
+  chatSyncBar();
+  chatStatus('Запускаю нейросеть…');
+  var s = chatDB.settings;
+  var b = aiBridge();
+  if (!b || !b.chat) {
+    chatFinish(c, 'Мост к нейросети недоступен');
+    return;
+  }
+  b.chat(JSON.stringify(hist), +s.maxTokens || 512, +s.temp);
+}
+function chatSetLast(c, text) {
+  var m = c.messages[c.messages.length - 1];
+  if (!m || m.role !== 'assistant') return;
+  m.content = text;
+  if (cv.screen === 'view' && cv.id === c.id) {
+    var el = $('c-b-' + (c.messages.length - 1)), box = $('c-msgs');
+    if (el) {
+      var near = box.scrollHeight - box.scrollTop - box.clientHeight < 90;
+      el.innerHTML = fmt(text) + '<span class="c-cur">▍</span>';
+      if (near) box.scrollTop = box.scrollHeight;
+    }
+  }
+}
+function chatFinish(c, errMsg) {
+  var m = c.messages[c.messages.length - 1];
+  if (m && m.role === 'assistant' && !m.content.trim()) c.messages.pop();
+  c.updated = Date.now();
+  cv.gen = null;
+  chatSave();
+  if (cv.screen === 'view' && cv.id === c.id) {
+    renderMessages(false);
+    chatSyncBar();
+    chatStatus(errMsg ? 'Ошибка: ' + errMsg : '', !!errMsg);
+  } else if (cv.open && cv.screen === 'list') {
+    chatRenderList();
+  }
+}
+
+function chatEvent(e) {
+  if (!e) return false;
+  switch (e.type) {
+    case 'exportDone': chatToast('Файл сохранён'); return true;
+    case 'exportCancel': return true;
+    case 'exportError': chatToast(e.message || 'Не удалось сохранить', true); return true;
+  }
+  if (cv.gen) {
+    var c = chatById(cv.gen.chatId);
+    if (!c) { cv.gen = null; return false; }
+    switch (e.type) {
+      case 'loading': chatStatus('Загружаю модель в память (при первом запуске до минуты)…'); return true;
+      case 'started': chatStatus('Нейросеть думает…'); return true;
+      case 'token':
+        if (e.text) { if (cv.screen === 'view' && cv.id === c.id) chatStatus(''); chatSetLast(c, e.text); }
+        return true;
+      case 'done': chatSetLast(c, e.text || ''); chatFinish(c, null); return true;
+      case 'error':
+        if (e.text) chatSetLast(c, e.text);
+        chatFinish(c, e.message);
+        return true;
+    }
+    return false;
+  }
+  if (!cv.open) return false;
+  var mb = function (n) { return Math.round(n / 1048576); };
+  var msg = $('c-model-msg');
+  switch (e.type) {
+    case 'copyProgress':
+      if (msg) msg.textContent = 'Копирую модель: ' + mb(e.done) + (e.total > 0 ? ' из ' + mb(e.total) + ' МБ (' + Math.floor(e.done * 100 / e.total) + '%)' : ' МБ');
+      break;
+    case 'copyDone': chatSyncBar(); chatToast('Модель сохранена'); if (cv.sheet === 'settings') chatSettingsSheet(); break;
+    case 'modelDeleted': chatSyncBar(); chatToast('Модель удалена'); if (cv.sheet === 'settings') chatSettingsSheet(); break;
+    case 'copyCancel': if (msg) msg.textContent = ''; break;
+    case 'error': chatToast(e.message || 'Ошибка', true); if (msg) msg.textContent = ''; return true;
+  }
+  return false;
+}
+(function () {
+  var orig = window.nvelAiEvent;
+  window.nvelAiEvent = function (e) { if (chatEvent(e)) return; if (orig) orig(e); };
+})();
+
+function showSheet(kind, html) {
+  cv.sheet = kind;
+  var s = $('c-sheet');
+  s.innerHTML = '<div class="c-sheet-in">' + html + '</div>';
+  s.className = 'on';
+}
+function closeSheet() {
+  cv.sheet = false; cv.confirmFn = null;
+  var s = $('c-sheet'); if (s) { s.className = ''; s.innerHTML = ''; }
+}
+function chatToast(t, isErr) {
+  var e = $('c-toast'); if (!e) return;
+  e.textContent = t; e.className = 'on' + (isErr ? ' err' : '');
+  clearTimeout(cv.toastT);
+  cv.toastT = setTimeout(function () { e.className = ''; }, 2800);
+}
+function chatConfirm(textHtml, okLabel, fn) {
+  cv.confirmFn = fn;
+  showSheet('confirm', '<div class="mtext" style="margin-bottom:16px">' + textHtml + '</div>' +
+    '<div class="row"><button class="btn" style="flex:1;background:var(--red);color:#220803;border:none" onclick="var f=cv.confirmFn;closeSheet();if(f)f()">' + okLabel + '</button>' +
+    '<button class="btn" style="flex:1" onclick="closeSheet()">ОТМЕНА</button></div>');
+}
+
+function chatMenuSheet() {
+  showSheet('menu', '<h3>ЧАТ</h3>' +
+    '<button class="btn c-opt" onclick="chatRenameSheet()">ПЕРЕИМЕНОВАТЬ</button>' +
+    '<button class="btn c-opt" onclick="chatCopyAll()">КОПИРОВАТЬ ВЕСЬ ДИАЛОГ</button>' +
+    '<button class="btn c-opt" onclick="chatSettingsSheet()">НАСТРОЙКИ И МОДЕЛЬ</button>' +
+    '<button class="btn c-opt danger" onclick="chatClearAsk()">ОЧИСТИТЬ ПЕРЕПИСКУ</button>' +
+    '<button class="btn c-opt danger" onclick="var id=cv.id;closeSheet();chatDeleteAsk(id)">УДАЛИТЬ ЧАТ</button>');
+}
+function chatRenameSheet() {
+  var c = curChat(); if (!c) return;
+  showSheet('rename', '<h3>НАЗВАНИЕ ЧАТА</h3><input id="c-rn" maxlength="60" value="' + esc(c.title) + '">' +
+    '<button class="btn primary" onclick="chatRenameSave()">СОХРАНИТЬ</button>');
+  setTimeout(function () { var i = $('c-rn'); if (i) { i.focus(); i.select(); } }, 50);
+}
+function chatRenameSave() {
+  var c = curChat(), v = ($('c-rn').value || '').trim(); if (!c) return;
+  c.title = v || CHAT_NEW_TITLE;
+  chatSave(); closeSheet();
+  var t = $('c-title'); if (t) t.textContent = c.title;
+}
+function chatClearAsk() {
+  var c = curChat(); if (!c) return;
+  chatConfirm('Удалить все сообщения в этом чате? Сам чат останется.', 'ОЧИСТИТЬ', function () {
+    if (cv.gen && cv.gen.chatId === c.id) { var b = aiBridge(); if (b) b.cancel(); }
+    c.messages = []; c.updated = Date.now(); chatSave();
+    renderMessages(true);
+  });
+}
+
+function chatSettingsSheet() {
+  var s = chatDB.settings, st = aiStatus();
+  var model;
+  if (!st.available) model = '<div class="rtxt">Доступно только в приложении.</div>';
+  else if (!st.hasModel) model = '<div class="rtxt">Модель не выбрана.</div><button class="btn" onclick="aiPick()">ВЫБРАТЬ МОДЕЛЬ (.gguf)</button>';
+  else model = '<div class="rtxt">Модель: ' + st.modelMb + ' МБ' + (st.loaded ? ' · в памяти' : '') + '</div>' +
+    '<div class="row"><button class="btn small" onclick="aiPick()">СМЕНИТЬ МОДЕЛЬ</button>' +
+    '<button class="btn small" onclick="chatModelDeleteAsk()">УДАЛИТЬ МОДЕЛЬ</button></div>';
+  var opts = [128, 256, 512, 1024].map(function (n) {
+    return '<option value="' + n + '"' + (+s.maxTokens === n ? ' selected' : '') + '>' + n + ' токенов' + (n === 512 ? ' (по умолчанию)' : '') + '</option>';
+  }).join('');
+  showSheet('settings', '<h3>НАСТРОЙКИ</h3>' +
+    '<div class="lbl">МОДЕЛЬ</div>' + model + '<div class="rtxt" id="c-model-msg"></div>' +
+    '<div class="lbl" style="margin-top:6px">СИСТЕМНЫЙ ПРОМПТ (для всех чатов)</div>' +
+    '<textarea rows="3" placeholder="Например: Отвечай кратко и по-русски." oninput="chatDB.settings.system=this.value;chatSave()">' + esc(s.system) + '</textarea>' +
+    '<div class="lbl">ТЕМПЕРАТУРА: <span id="c-tv">' + (+s.temp).toFixed(1) + '</span> (ниже = точнее, выше = креативнее)</div>' +
+    '<input type="range" min="0" max="1.5" step="0.1" value="' + s.temp + '" oninput="chatDB.settings.temp=+this.value;$(\'c-tv\').textContent=(+this.value).toFixed(1);chatSave()">' +
+    '<div class="lbl">МАКС. ДЛИНА ОТВЕТА</div>' +
+    '<select onchange="chatDB.settings.maxTokens=+this.value;chatSave()">' + opts + '</select>' +
+    '<div class="rfoot mono">КОНТЕКСТ 4096 ТОКЕНОВ. КОГДА ПЕРЕПИСКА НЕ ВЛЕЗАЕТ, САМЫЕ СТАРЫЕ СООБЩЕНИЯ МОДЕЛЬ ПЕРЕСТАЁТ ВИДЕТЬ (В ЧАТЕ ОНИ ОСТАЮТСЯ).</div>' +
+    '<button class="btn primary" style="margin-top:14px" onclick="closeSheet()">ГОТОВО</button>');
+}
+function chatModelDeleteAsk() {
+  chatConfirm('Удалить файл модели с телефона?', 'УДАЛИТЬ', function () { var b = aiBridge(); if (b) b.deleteModel(); });
+}
+
+function copyText(t) {
+  var ok = false;
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = t; ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+  } catch (e) {}
+  if (!ok && navigator.clipboard) { try { navigator.clipboard.writeText(t); ok = true; } catch (e) {} }
+  chatToast(ok ? 'Скопировано' : 'Не удалось скопировать', !ok);
+}
+function chatCopyMsg(i) { var c = curChat(); if (c && c.messages[i]) copyText(c.messages[i].content); }
+function chatCopyAll() { var c = curChat(); closeSheet(); if (c) copyText(chatToText(c)); }
+
+function chatToText(c) {
+  return c.messages.map(function (m) { return (m.role === 'user' ? 'Вы' : 'Нейросеть') + ' [' + fdate(m.ts) + ']:\n' + m.content; }).join('\n\n');
+}
+function chatExportBuild(c, kind) {
+  var now = new Date(), day = now.getFullYear() + '-' + p2(now.getMonth() + 1) + '-' + p2(now.getDate());
+  var base = (c.title || 'chat').replace(/[\\/:*?"<>|\n\r]+/g, ' ').trim().replace(/\s+/g, '_').slice(0, 40) || 'chat';
+  var name = 'nvel_' + base + '_' + day;
+  if (kind === 'json') {
+    return { name: name + '.json', mime: 'application/json', text: JSON.stringify({
+      title: c.title, created: new Date(c.created).toISOString(), exported: now.toISOString(),
+      messages: c.messages.map(function (m) { return { role: m.role, time: new Date(m.ts).toISOString(), content: m.content }; })
+    }, null, 2) };
+  }
+  if (kind === 'txt') {
+    return { name: name + '.txt', mime: 'text/plain',
+      text: c.title + '\nЭкспорт: ' + fdate(now.getTime()) + ' · сообщений: ' + c.messages.length + '\n' + '='.repeat(30) + '\n\n' + chatToText(c) + '\n' };
+  }
+  var md = '# ' + c.title + '\n\n*Экспорт: ' + fdate(now.getTime()) + ' · сообщений: ' + c.messages.length + '*\n\n---\n\n';
+  md += c.messages.map(function (m) { return '### ' + (m.role === 'user' ? 'Вы' : 'Нейросеть') + ' · ' + fdate(m.ts) + '\n\n' + m.content; }).join('\n\n---\n\n') + '\n';
+  return { name: name + '.md', mime: 'text/markdown', text: md };
+}
+function chatExportSheet() {
+  var c = curChat(); if (!c) return;
+  if (!c.messages.length) { chatToast('В чате пока нет сообщений', true); return; }
+  showSheet('export', '<h3>ЭКСПОРТ ДИАЛОГА</h3>' +
+    '<button class="btn c-opt" onclick="chatExport(\'md\')">MARKDOWN (.md)<small>Красиво читается, открывается в любом редакторе</small></button>' +
+    '<button class="btn c-opt" onclick="chatExport(\'txt\')">ТЕКСТ (.txt)<small>Простой текст без разметки</small></button>' +
+    '<button class="btn c-opt" onclick="chatExport(\'json\')">JSON (.json)<small>Для обработки программами</small></button>');
+}
+function chatExport(kind) {
+  var c = curChat(); if (!c) return;
+  closeSheet();
+  var f = chatExportBuild(c, kind), b = aiBridge();
+  if (b && b.exportFile) { b.exportFile(f.name, f.mime, f.text); return; }
+  try {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([f.text], { type: f.mime + ';charset=utf-8' }));
+    a.download = f.name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    chatToast('Файл сохранён');
+  } catch (e) { chatToast('Не удалось сохранить', true); }
+}
+
+renderList();
+</script>
+</body>
+</html>
